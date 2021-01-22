@@ -1,0 +1,116 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<script id="vertex-shader-lines" type="x-shader/x-vertex">
+/*Faz desenhar a linha e o ponto inicial da trajetória*/
+attribute vec4 linePosition;
+void main(){
+    gl_Position = linePosition;
+    gl_PointSize = 6.0;
+}
+</script>
+<script id="vertex-shader-points" type="x-shader/x-vertex">
+//Faz desenhar os pontos nas diversas animações
+attribute vec4 p0;
+attribute vec4 p1;
+attribute vec4 t0;
+attribute vec4 v0Explosion1;
+attribute vec4 v0Explosion2;
+attribute vec4 vColor;
+attribute vec4 pointsNumber;
+attribute vec4 riseAnimationV;
+attribute vec4 stayBackTime;
+varying vec4 fColor;
+varying float fResetTimeExplosion;
+varying float fResetTimeRise;
+uniform float globalTime;
+const vec4 a = vec4(0.0, -0.25, 0.0, 0.0);
+void main(){
+    fColor = vColor;
+    /*Fazer com que o tempo comece do 0*/
+    float t = globalTime - t0.x; 
+    /*Cálculo da velocidade inicial*/
+    vec4 v0 = p1 - p0;
+    float tExplosion1;
+    if(v0.y < 0.0)
+        tExplosion1 = 0.0;
+    else
+        tExplosion1 = 0.0 - (v0.y/a.y);
+    /*Verifica que está na altura da 1º explosão*/
+    if(t >= tExplosion1){
+        float resetTimeExplosion1 = t - tExplosion1;
+        vec4 resultingV0Explosion1 = vec4(v0.x + v0Explosion1.x, v0Explosion1.y, v0Explosion1.z, v0Explosion1.w);
+        vec4 p0Explosion1 = p0 + v0*tExplosion1 + 0.5*a*tExplosion1*tExplosion1;
+        /*Se o núemro de pontos for superior ou igual a 200, é efetuada também a 2º explosão*/
+        if(pointsNumber.x < 200.0)
+            fResetTimeExplosion = resetTimeExplosion1;
+        if(pointsNumber.x >= 200.0 && resetTimeExplosion1 >= 1.3){
+                float resetTimeExplosion2 = resetTimeExplosion1 - 1.3;
+                fResetTimeExplosion = resetTimeExplosion2;
+                vec4 resultingV0Explosion2 = vec4(v0Explosion2.x + resultingV0Explosion1.x, v0Explosion2.y + resultingV0Explosion1.y, v0Explosion2.z, v0Explosion2.w);
+                vec4 p0Explosion2 = p0Explosion1 + resultingV0Explosion1*1.3 + 0.5*a*1.3*1.3;
+                gl_Position = p0Explosion2 + resultingV0Explosion2*resetTimeExplosion2 + 0.5*a*resetTimeExplosion2*resetTimeExplosion2;
+        }
+        else 
+            gl_Position = p0Explosion1 + resultingV0Explosion1*resetTimeExplosion1 + 0.5*a*resetTimeExplosion1*resetTimeExplosion1;
+    }
+    /*Se o numero de pontos for superior a 200 e ainda não chegou a altura da explosão faz o efeito dos rastilho*/
+    else if(pointsNumber.x >= 200.0 && t >= stayBackTime.x) {
+        float resetTimeAscension = t - stayBackTime.x;
+        fResetTimeRise = resetTimeAscension;
+        vec4 p0Rise = p0 + v0*t + 0.5*a*t*t;
+        gl_Position = p0Rise + riseAnimationV*resetTimeAscension + 0.5*a*resetTimeAscension*resetTimeAscension;
+    }    
+    else
+		gl_Position = p0 + v0*t + 0.5*a*t*t;
+	gl_PointSize = 4.0;
+    fColor = vColor;
+}
+</script>
+<script id="fragment-shader-lines" type="x-shader/x-fragment">
+/*Determina a cor da linha e do ponto inicial da trajetória*/
+precision mediump float;
+void main() {
+    if(distance(gl_PointCoord, vec2(0.5)) > 0.5) 
+        discard;
+    gl_FragColor = vec4(0.0, 0.0, 1.0, 1.0);
+}
+</script>
+<script id="fragment-shader-points" type="x-shader/x-fragment">
+/*Determina a cor dos pontos nas diversas animações*/
+precision mediump float;
+varying vec4 fColor;
+varying float fResetTimeExplosion;
+varying float fResetTimeRise;
+void main() {
+    if(distance(gl_PointCoord, vec2(0.5)) > 0.5) 
+        discard;
+    float blackColor;
+    /*Após a 1º ou 2º explosão (dependendo do nº de pontos, situação que é controlada no vertex-shader-points) 
+    os pontos vão escurecendo*/
+    if(fResetTimeExplosion >= 0.3){
+        blackColor = fResetTimeExplosion / 3.0;
+        gl_FragColor = vec4(fColor.x - blackColor, fColor.y - blackColor, fColor.z - blackColor, fColor.w);
+    }
+    /*Os pontos do rastilho vão escurecendo rapidamente*/
+    else if(fResetTimeRise >= 0.1){
+        blackColor = fResetTimeRise + 0.07;
+        gl_FragColor = vec4(fColor.x - blackColor, fColor.y - blackColor, fColor.z - blackColor, fColor.w);
+    }
+    else
+        gl_FragColor = fColor;
+}
+</script>
+<script type="text/javascript" src="./Common/webgl-utils.js"></script>
+<script type="text/javascript" src="./Common/initShaders.js"></script>
+<script type="text/javascript" src="./Common/MV.js"></script>
+<script type="text/javascript" src="tp1.js"></script>
+</head>
+<body>
+    <title>TP1</title>
+    <canvas id="gl-canvas" width="512" height="512">
+        Oops... your browser doesn't support the HTML5 canvas element"
+    </canvas>
+</body>
+</html>

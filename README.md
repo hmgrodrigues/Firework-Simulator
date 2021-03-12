@@ -9,4 +9,4 @@ This is a project based on **JavaScript** and **WebGL** library, where it simula
 
 You can do both things at the same time.
 
-The ones that are "triggering" when going up will have a second explosion.
+The ones that are "triggering" when going up will have a second explosion and this is randomly decided.
